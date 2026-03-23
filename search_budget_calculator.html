@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Budget Calculator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; color: #1a1a1a; padding: 2rem; max-width: 700px; margin: 0 auto; }
+  h2 { font-size: 18px; font-weight: 500; margin-bottom: 1.5rem; }
+  .section-title { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 1rem; }
+  .calc-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; }
+  .calc-label { font-size: 14px; color: #555; min-width: 220px; }
+  .calc-input { width: 100px; padding: 6px 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; }
+  .calc-input:focus { outline: none; border-color: #aaa; }
+  .calc-hint { font-size: 12px; color: #aaa; }
+  .divider { border: none; border-top: 1px solid #eee; margin: 1.5rem 0; }
+  .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .metric-card { background: #f7f7f5; border-radius: 8px; padding: 1rem; }
+  .metric-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .metric-value { font-size: 22px; font-weight: 500; color: #1a1a1a; }
+  .metric-sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+  .note { font-size: 12px; color: #888; padding: 10px 12px; background: #f7f7f5; border-radius: 8px; border-left: 2px solid #ddd; margin-top: 1rem; line-height: 1.6; }
+</style>
+</head>
+<body>
+<h2>Search budget calculator</h2>
+
+<div class="section-title">Inputs</div>
+
+<div class="calc-row">
+  <span class="calc-label">Avg. CPC (local currency)</span>
+  <input class="calc-input" type="number" id="cpc" value="3.50" step="0.10" oninput="calc()">
+  <span class="calc-hint">e.g. £3.50 for UK</span>
+</div>
+<div class="calc-row">
+  <span class="calc-label">Number of LP variants</span>
+  <input class="calc-input" type="number" id="variants" value="4" min="2" oninput="calc()">
+  <span class="calc-hint">including control</span>
+</div>
+<div class="calc-row">
+  <span class="calc-label">Expected LP to QS rate (%)</span>
+  <input class="calc-input" type="number" id="cvr" value="35" min="1" max="100" oninput="calc()">
+  <span class="calc-hint">LP click to quiz start</span>
+</div>
+<div class="calc-row">
+  <span class="calc-label">Statistical significance level (%)</span>
+  <input class="calc-input" type="number" id="sig" value="95" min="80" max="99" oninput="calc()">
+  <span class="calc-hint">typically 95%</span>
+</div>
+<div class="calc-row">
+  <span class="calc-label">Minimum detectable effect (%)</span>
+  <input class="calc-input" type="number" id="mde" value="15" min="5" max="50" oninput="calc()">
+  <span class="calc-hint">relative lift you want to detect</span>
+</div>
+
+<hr class="divider">
+
+<div class="section-title">Results</div>
+<div class="results-grid">
+  <div class="metric-card">
+    <div class="metric-label">Conversions per variant</div>
+    <div class="metric-value" id="r-conv">—</div>
+    <div class="metric-sub">quiz starts needed</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Clicks per variant</div>
+    <div class="metric-value" id="r-clicks">—</div>
+    <div class="metric-sub">to reach stat sig</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Total clicks needed</div>
+    <div class="metric-value" id="r-total-clicks">—</div>
+    <div class="metric-sub">across all variants</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Total budget required</div>
+    <div class="metric-value" id="r-budget">—</div>
+    <div class="metric-sub">at avg CPC</div>
+  </div>
+</div>
+<div class="results-grid">
+  <div class="metric-card">
+    <div class="metric-label">Budget per week (slow)</div>
+    <div class="metric-value" id="r-wk2">—</div>
+    <div class="metric-sub">over 4 weeks</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Budget per week (fast)</div>
+    <div class="metric-value" id="r-wk4">—</div>
+    <div class="metric-sub">over 2 weeks</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Daily budget (fast)</div>
+    <div class="metric-value" id="r-daily">—</div>
+    <div class="metric-sub">to hit it in 2 weeks</div>
+  </div>
+</div>
+
+<div class="note" id="note-text"></div>
+
+<script>
+function calc() {
+  const cpc = parseFloat(document.getElementById('cpc').value) || 0;
+  const variants = parseInt(document.getElementById('variants').value) || 2;
+  const cvr = parseFloat(document.getElementById('cvr').value) / 100 || 0.35;
+  const sig = parseFloat(document.getElementById('sig').value) / 100 || 0.95;
+  const mde = parseFloat(document.getElementById('mde').value) / 100 || 0.15;
+
+  const z = sig >= 0.99 ? 2.576 : sig >= 0.95 ? 1.96 : sig >= 0.90 ? 1.645 : 1.28;
+  const power_z = 0.842;
+  const p1 = cvr;
+  const p2 = cvr * (1 + mde);
+  const pooled = (p1 + p2) / 2;
+  const convPerVariant = Math.ceil(
+    Math.pow((z * Math.sqrt(2 * pooled * (1 - pooled)) + power_z * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))), 2) /
+    Math.pow(p2 - p1, 2)
+  );
+
+  const clicksPerVariant = Math.ceil(convPerVariant / cvr);
+  const totalClicks = clicksPerVariant * variants;
+  const totalBudget = totalClicks * cpc;
+  const wkBudget4 = totalBudget / 4;
+  const wkBudget2 = totalBudget / 2;
+  const dailyBudget = wkBudget2 / 7;
+
+  const fmt = (n) => Math.round(n).toLocaleString();
+  const curr = (n) => Math.round(n).toLocaleString();
+
+  document.getElementById('r-conv').textContent = fmt(convPerVariant);
+  document.getElementById('r-clicks').textContent = fmt(clicksPerVariant);
+  document.getElementById('r-total-clicks').textContent = fmt(totalClicks);
+  document.getElementById('r-budget').textContent = curr(totalBudget);
+  document.getElementById('r-wk2').textContent = curr(wkBudget4);
+  document.getElementById('r-wk4').textContent = curr(wkBudget2);
+  document.getElementById('r-daily').textContent = curr(dailyBudget);
+
+  document.getElementById('note-text').textContent =
+    'Based on ' + variants + ' variants at a ' + Math.round(cvr * 100) + '% LP-to-QS rate, detecting a ' +
+    Math.round(mde * 100) + '% relative lift at ' + Math.round(sig * 100) + '% confidence. ' +
+    'Run the test for at least 2 full weeks to avoid day-of-week bias. ' +
+    'Allocate traffic evenly across variants from day one.';
+}
+calc();
+</script>
+</body>
+</html>
