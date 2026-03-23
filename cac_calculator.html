@@ -134,6 +134,45 @@
   </div>
 </div>
 
+<hr class="divider">
+
+<div class="section-title">Experiment spend estimate</div>
+<p style="font-size: 13px; color: #888; margin-bottom: 1rem;">How much do you need to spend to generate enough signal to call the funnel experiment?</p>
+
+<div class="calc-row">
+  <span class="calc-label">Minimum CPs per variant</span>
+  <input class="calc-input" type="number" id="min_cp" value="50" min="10" oninput="calc()">
+  <span class="calc-hint">CPs needed to call a result</span>
+</div>
+<div class="calc-row">
+  <span class="calc-label">Number of variants</span>
+  <input class="calc-input" type="number" id="exp_variants" value="3" min="2" oninput="calc()">
+  <span class="calc-hint">pricing variants being tested</span>
+</div>
+
+<div class="results-grid" style="margin-top: 0.5rem;">
+  <div class="metric-card">
+    <div class="metric-label">Total CPs needed</div>
+    <div class="metric-value" id="r-total-cp">—</div>
+    <div class="metric-sub">across all variants</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Total spend required</div>
+    <div class="metric-value" id="r-exp-spend">—</div>
+    <div class="metric-sub">at implied cost per CP</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Weekly spend (4 weeks)</div>
+    <div class="metric-value" id="r-exp-wk4">—</div>
+    <div class="metric-sub">to validate in 4 weeks</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Weekly spend (8 weeks)</div>
+    <div class="metric-value" id="r-exp-wk8">—</div>
+    <div class="metric-sub">to validate in 8 weeks</div>
+  </div>
+</div>
+
 <div class="note" id="note-text"></div>
 
 <script>
@@ -190,10 +229,24 @@ function calc() {
   setReqCard('req-qs-card', 'req-qs-op', req_qs_op, 100);
   setReqCard('req-cp-card', 'req-qs-cp', req_qs_cp, 100);
 
+  const min_cp = parseInt(document.getElementById('min_cp').value) || 50;
+  const exp_variants = parseInt(document.getElementById('exp_variants').value) || 3;
+
+  const total_cp = min_cp * exp_variants;
+  const exp_spend = total_cp * cost_per_cp;
+  const exp_wk4 = exp_spend / 4;
+  const exp_wk8 = exp_spend / 8;
+
+  document.getElementById('r-total-cp').textContent = fmt(total_cp);
+  document.getElementById('r-exp-spend').textContent = curr(exp_spend);
+  document.getElementById('r-exp-wk4').textContent = curr(exp_wk4);
+  document.getElementById('r-exp-wk8').textContent = curr(exp_wk8);
+
   document.getElementById('note-text').textContent =
     'At a ' + pct(lp_qs * 100) + ' LP to QS rate and ' + pct(qs_cp * 100) + ' QS to CP rate, ' +
     'your implied QS to OP rate is ' + pct(qs_op * 100) + '. ' +
     'To hit a target CAC of ' + curr(target_cac) + ' you need QS to OP to reach ' + pct(req_qs_op * 100) + '. ' +
+    'To generate ' + fmt(min_cp) + ' CPs per variant across ' + exp_variants + ' variants you need to spend approximately ' + curr(exp_spend) + ' in total, or ' + curr(exp_wk4) + ' per week over 4 weeks. ' +
     (within_50 ? 'Current rates are within the 50% launch viability threshold.' : 'Current rates are outside the 50% launch viability threshold. Review funnel before scaling spend.');
 }
 calc();
