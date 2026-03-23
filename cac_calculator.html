@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAC Calculator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; color: #1a1a1a; padding: 2rem; max-width: 700px; margin: 0 auto; }
+  h2 { font-size: 18px; font-weight: 500; margin-bottom: 0.5rem; }
+  .subtitle { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
+  .section-title { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 1rem; }
+  .calc-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; }
+  .calc-label { font-size: 14px; color: #555; min-width: 220px; }
+  .calc-input { width: 100px; padding: 6px 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; }
+  .calc-input:focus { outline: none; border-color: #aaa; }
+  .calc-hint { font-size: 12px; color: #aaa; }
+  .divider { border: none; border-top: 1px solid #eee; margin: 1.5rem 0; }
+  .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .metric-card { background: #f7f7f5; border-radius: 8px; padding: 1rem; }
+  .metric-card.highlight { background: #f0f7f0; }
+  .metric-card.warning { background: #fdf5f0; }
+  .metric-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .metric-value { font-size: 22px; font-weight: 500; color: #1a1a1a; }
+  .metric-value.good { color: #2a7a2a; }
+  .metric-value.bad { color: #c04a20; }
+  .metric-sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+  .note { font-size: 12px; color: #888; padding: 10px 12px; background: #f7f7f5; border-radius: 8px; border-left: 2px solid #ddd; margin-top: 1rem; line-height: 1.6; }
+  .required-section { margin-top: 1.5rem; }
+  .required-title { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 1rem; }
+  .required-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .required-card { background: #f7f7f5; border-radius: 8px; padding: 1rem; border-left: 2px solid #ddd; }
+  .required-card.achievable { border-left-color: #4a9a4a; }
+  .required-card.stretch { border-left-color: #e09a30; }
+  .required-card.difficult { border-left-color: #c04a20; }
+  .required-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .required-value { font-size: 18px; font-weight: 500; color: #1a1a1a; }
+  .required-sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+</style>
+</head>
+<body>
+<h2>CAC calculator</h2>
+<p class="subtitle">Model your funnel economics and understand what needs to be true to hit target CAC.</p>
+
+<div class="section-title">Funnel inputs</div>
+
+<div class="calc-row">
+  <span class="calc-label">CPC (local currency)</span>
+  <input class="calc-input" type="number" id="cpc" value="4.00" step="0.10" oninput="calc()">
+  <span class="calc-hint">avg cost per click</span>
+</div>
+<div class="calc-row">
+  <span class="calc-label">LP to QS rate (%)</span>
+  <input class="calc-input" type="number" id="lp_qs" value="20" min="1" max="100" oninput="calc()">
+  <span class="calc-hint">LP click to quiz start</span>
+</div>
+<div class="calc-row">
+  <span class="calc-label">QS to CP rate (%)</span>
+  <input class="calc-input" type="number" id="qs_cp" value="7" min="1" max="100" oninput="calc()">
+  <span class="calc-hint">quiz start to consult payment</span>
+</div>
+<div class="calc-row">
+  <span class="calc-label">CP to OP rate (%)</span>
+  <input class="calc-input" type="number" id="cp_op" value="75" min="1" max="100" oninput="calc()">
+  <span class="calc-hint">consult paid to order placed</span>
+</div>
+
+<hr class="divider">
+
+<div class="section-title">Target</div>
+<div class="calc-row">
+  <span class="calc-label">Target CAC (local currency)</span>
+  <input class="calc-input" type="number" id="target_cac" value="500" step="10" oninput="calc()">
+  <span class="calc-hint">adjust per market</span>
+</div>
+
+<hr class="divider">
+
+<div class="section-title">Funnel output</div>
+<div class="results-grid">
+  <div class="metric-card">
+    <div class="metric-label">Cost per QS</div>
+    <div class="metric-value" id="r-cpqs">—</div>
+    <div class="metric-sub">per quiz start</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Cost per CP</div>
+    <div class="metric-value" id="r-cpcp">—</div>
+    <div class="metric-sub">per consult paid</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Implied QS to OP</div>
+    <div class="metric-value" id="r-qs-op">—</div>
+    <div class="metric-sub">quiz start to order placed</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Implied CAC</div>
+    <div class="metric-value" id="r-cac">—</div>
+    <div class="metric-sub">at current rates</div>
+  </div>
+</div>
+
+<div class="results-grid">
+  <div class="metric-card">
+    <div class="metric-label">vs target CAC</div>
+    <div class="metric-value" id="r-vs-target">—</div>
+    <div class="metric-sub" id="r-vs-target-sub">—</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Within 50% of target</div>
+    <div class="metric-value" id="r-within">—</div>
+    <div class="metric-sub">launch viability threshold</div>
+  </div>
+</div>
+
+<div class="required-section">
+  <div class="required-title">What needs to be true to hit target CAC</div>
+  <div class="required-grid">
+    <div class="required-card" id="req-lp-card">
+      <div class="required-label">Required LP to QS rate</div>
+      <div class="required-value" id="req-lp">—</div>
+      <div class="required-sub">holding all other inputs constant</div>
+    </div>
+    <div class="required-card" id="req-qs-card">
+      <div class="required-label">Required QS to OP rate</div>
+      <div class="required-value" id="req-qs-op">—</div>
+      <div class="required-sub">holding all other inputs constant</div>
+    </div>
+    <div class="required-card" id="req-cp-card">
+      <div class="required-label">Required QS to CP rate</div>
+      <div class="required-value" id="req-qs-cp">—</div>
+      <div class="required-sub">holding all other inputs constant</div>
+    </div>
+  </div>
+</div>
+
+<div class="note" id="note-text"></div>
+
+<script>
+function fmt(n) { return Math.round(n).toLocaleString(); }
+function pct(n) { return n.toFixed(1) + '%'; }
+function curr(n) { return Math.round(n).toLocaleString(); }
+
+function calc() {
+  const cpc = parseFloat(document.getElementById('cpc').value) || 0;
+  const lp_qs = parseFloat(document.getElementById('lp_qs').value) / 100 || 0;
+  const qs_cp = parseFloat(document.getElementById('qs_cp').value) / 100 || 0;
+  const cp_op = parseFloat(document.getElementById('cp_op').value) / 100 || 0;
+  const target_cac = parseFloat(document.getElementById('target_cac').value) || 500;
+
+  const cost_per_qs = cpc / lp_qs;
+  const cost_per_cp = cost_per_qs / qs_cp;
+  const qs_op = qs_cp * cp_op;
+  const implied_cac = cost_per_cp / cp_op;
+
+  const vs_target = ((implied_cac - target_cac) / target_cac) * 100;
+  const within_50 = implied_cac <= target_cac * 1.5;
+
+  // Required rates to hit target CAC
+  const req_lp_qs = cpc / (target_cac * qs_cp * cp_op);
+  const req_qs_op = cpc / (target_cac * lp_qs);
+  const req_qs_cp = cpc / (target_cac * lp_qs * cp_op);
+
+  document.getElementById('r-cpqs').textContent = curr(cost_per_qs);
+  document.getElementById('r-cpcp').textContent = curr(cost_per_cp);
+  document.getElementById('r-qs-op').textContent = pct(qs_op * 100);
+  
+  const cacEl = document.getElementById('r-cac');
+  cacEl.textContent = curr(implied_cac);
+  cacEl.className = 'metric-value' + (implied_cac <= target_cac ? ' good' : implied_cac <= target_cac * 1.5 ? '' : ' bad');
+
+  const vsEl = document.getElementById('r-vs-target');
+  vsEl.textContent = (vs_target >= 0 ? '+' : '') + vs_target.toFixed(0) + '%';
+  vsEl.className = 'metric-value' + (vs_target <= 0 ? ' good' : vs_target <= 50 ? '' : ' bad');
+  document.getElementById('r-vs-target-sub').textContent = vs_target <= 0 ? 'below target' : 'above target';
+
+  const withinEl = document.getElementById('r-within');
+  withinEl.textContent = within_50 ? 'Yes' : 'No';
+  withinEl.className = 'metric-value' + (within_50 ? ' good' : ' bad');
+
+  // Required rates
+  const setReqCard = (cardId, valId, value, max) => {
+    const pctVal = value * 100;
+    document.getElementById(valId).textContent = pct(pctVal);
+    const card = document.getElementById(cardId);
+    card.className = 'required-card' + (pctVal <= max * 0.7 ? ' achievable' : pctVal <= max ? ' stretch' : ' difficult');
+  };
+
+  setReqCard('req-lp-card', 'req-lp', req_lp_qs, 100);
+  setReqCard('req-qs-card', 'req-qs-op', req_qs_op, 100);
+  setReqCard('req-cp-card', 'req-qs-cp', req_qs_cp, 100);
+
+  document.getElementById('note-text').textContent =
+    'At a ' + pct(lp_qs * 100) + ' LP to QS rate and ' + pct(qs_cp * 100) + ' QS to CP rate, ' +
+    'your implied QS to OP rate is ' + pct(qs_op * 100) + '. ' +
+    'To hit a target CAC of ' + curr(target_cac) + ' you need QS to OP to reach ' + pct(req_qs_op * 100) + '. ' +
+    (within_50 ? 'Current rates are within the 50% launch viability threshold.' : 'Current rates are outside the 50% launch viability threshold. Review funnel before scaling spend.');
+}
+calc();
+</script>
+</body>
+</html>
