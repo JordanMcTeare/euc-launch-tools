@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meta Budget Calculator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f3;
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+      border: 0.5px solid #e0e0e0;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 13px;
+      color: #444;
+      font-weight: 500;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 9px 12px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: 0.5px solid #d0d0d0;
+      background: #fafafa;
+      color: #1a1a1a;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: #999;
+      background: #fff;
+    }
+
+    .field .hint {
+      font-size: 11px;
+      color: #aaa;
+      line-height: 1.4;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .results-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .result-card {
+      background: #f5f5f3;
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .result-card.highlight {
+      background: #e8f0fb;
+    }
+
+    .result-card .r-label {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .result-card.highlight .r-label {
+      color: #4a72b8;
+    }
+
+    .result-card .r-val {
+      font-size: 22px;
+      font-weight: 500;
+      color: #1a1a1a;
+    }
+
+    .result-card.highlight .r-val {
+      color: #1a4fa0;
+    }
+
+    .warning {
+      font-size: 13px;
+      color: #92620a;
+      background: #fef3dc;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-top: 14px;
+      display: none;
+      line-height: 1.5;
+    }
+
+    .warning.show { display: block; }
+
+    .note {
+      font-size: 12px;
+      color: #999;
+      margin-top: 14px;
+      line-height: 1.6;
+    }
+
+    .divider {
+      border: none;
+      border-top: 0.5px solid #ebebeb;
+      margin: 20px 0;
+    }
+
+    .footer {
+      font-size: 11px;
+      color: #bbb;
+      margin-top: 24px;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      .grid, .results-grid, .results-grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Meta budget calculator</h1>
+      <p>Estimates the weekly Meta budget needed to generate meaningful quiz start signal across your ad sets at launch. Plug in your market CPM and expected conversion rates to get a recommended spend level.</p>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Market inputs</div>
+      <div class="grid">
+        <div class="field">
+          <label>CPM ($)</label>
+          <input type="number" id="cpm" value="25" min="1" oninput="calc()">
+          <span class="hint">Average cost per 1,000 impressions in market</span>
+        </div>
+        <div class="field">
+          <label>Estimated CTR (%)</label>
+          <input type="number" id="ctr" value="1.5" min="0.1" step="0.1" oninput="calc()">
+          <span class="hint">Expected click-through rate. Use 1.5% as a conservative starting point for new markets</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Funnel inputs</div>
+      <div class="grid">
+        <div class="field">
+          <label>LP to quiz start CVR (%)</label>
+          <input type="number" id="cvr" value="15" min="1" oninput="calc()">
+          <span class="hint">% of LP visitors who start the quiz</span>
+        </div>
+        <div class="field">
+          <label>Target QS per ad set</label>
+          <input type="number" id="qs" value="50" min="1" oninput="calc()">
+          <span class="hint">Minimum quiz starts needed to read signal per ad set</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Account structure</div>
+      <div class="grid">
+        <div class="field">
+          <label>Number of ad sets</label>
+          <input type="number" id="adsets" value="5" min="1" oninput="calc()">
+          <span class="hint">Default: 5 (Trust, Price, Shame, Access, Ambassadors)</span>
+        </div>
+        <div class="field">
+          <label>Ads per ad set</label>
+          <input type="number" id="ads" value="4" min="1" oninput="calc()">
+          <span class="hint">Default: 4 concepts per pillar</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Budget output</div>
+      <div class="results-grid">
+        <div class="result-card">
+          <div class="r-label">Clicks needed per ad set</div>
+          <div class="r-val" id="clicks-per-adset">333</div>
+        </div>
+        <div class="result-card">
+          <div class="r-label">Impressions needed per ad set</div>
+          <div class="r-val" id="impr-per-adset">22,222</div>
+        </div>
+      </div>
+      <div class="results-grid">
+        <div class="result-card">
+          <div class="r-label">Budget per ad set (weekly)</div>
+          <div class="r-val" id="budget-per-adset">$556</div>
+        </div>
+        <div class="result-card highlight">
+          <div class="r-label">Total weekly Meta budget</div>
+          <div class="r-val" id="total-weekly">$2,778</div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="section-label">Signal check</div>
+      <div class="results-grid-3">
+        <div class="result-card">
+          <div class="r-label">Total ads in account</div>
+          <div class="r-val" id="total-ads">20</div>
+        </div>
+        <div class="result-card">
+          <div class="r-label">Total QS per week</div>
+          <div class="r-val" id="total-qs">250</div>
+        </div>
+        <div class="result-card">
+          <div class="r-label">Est. monthly budget</div>
+          <div class="r-val" id="monthly">$12,037</div>
+        </div>
+      </div>
+
+      <div class="warning" id="warning">Budget per ad set is below $200. Consider increasing spend, reducing the number of ad sets, or lowering your QS target to get meaningful signal.</div>
+      <div class="note" id="note"></div>
+    </div>
+
+    <div class="footer">Eucalyptus launch tools &middot; For early market launch only</div>
+  </div>
+
+  <script>
+    function fmt(n) {
+      return Math.round(n).toLocaleString('en-US');
+    }
+
+    function fmtd(n) {
+      return '$' + Math.round(n).toLocaleString('en-US');
+    }
+
+    function calc() {
+      const cpm = parseFloat(document.getElementById('cpm').value) || 25;
+      const ctr = (parseFloat(document.getElementById('ctr').value) || 1.5) / 100;
+      const cvr = (parseFloat(document.getElementById('cvr').value) || 15) / 100;
+      const qs = parseFloat(document.getElementById('qs').value) || 50;
+      const adsets = parseFloat(document.getElementById('adsets').value) || 5;
+      const ads = parseFloat(document.getElementById('ads').value) || 4;
+
+      const clicksPerAdset = qs / cvr;
+      const imprPerAdset = clicksPerAdset / ctr;
+      const budgetPerAdset = (imprPerAdset / 1000) * cpm;
+      const totalWeekly = budgetPerAdset * adsets;
+      const totalAds = adsets * ads;
+      const totalQS = qs * adsets;
+      const monthly = totalWeekly * 4.33;
+
+      document.getElementById('clicks-per-adset').textContent = fmt(clicksPerAdset);
+      document.getElementById('impr-per-adset').textContent = fmt(imprPerAdset);
+      document.getElementById('budget-per-adset').textContent = fmtd(budgetPerAdset);
+      document.getElementById('total-weekly').textContent = fmtd(totalWeekly);
+      document.getElementById('total-ads').textContent = fmt(totalAds);
+      document.getElementById('total-qs').textContent = fmt(totalQS);
+      document.getElementById('monthly').textContent = fmtd(monthly);
+
+      const warn = document.getElementById('warning');
+      warn.classList.toggle('show', budgetPerAdset < 200);
+
+      document.getElementById('note').textContent =
+        'At a $' + cpm + ' CPM and ' + (ctr * 100).toFixed(1) + '% CTR, you need ' + fmt(imprPerAdset) +
+        ' impressions per ad set to hit ' + qs + ' quiz starts. Across ' + adsets +
+        ' ad sets that\'s ' + fmt(imprPerAdset * adsets) + ' total impressions per week.';
+    }
+
+    calc();
+  </script>
+</body>
+</html>
